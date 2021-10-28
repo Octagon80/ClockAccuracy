@@ -21,38 +21,27 @@
 #include "Wire.h"
 #include "Adafruit_GFX.h"
 #include "Adafruit_SSD1306.h"
-#include <TimerOne.h>
-const int RPM_PIN=2;
-const int PIN_LED=13;
+
+#define led_out 13
+#define sensor_in 2
 
 Adafruit_SSD1306 display(128, 32, &Wire, 4);
 
-volatile int rpm                = 0;
-volatile int rpm_tik            = 0;   // Импульсы тахометра
-volatile boolean kontrol;
-volatile float rpm_array[3] = {0,0,0};   // массив для усреднения
-volatile float rpm_result         = 0;   // частота вращения
+boolean val;
+boolean oldval; 
+
+uint32_t mytime = 0 ;
+uint32_t oldtime = 0;
+uint32_t diftime = 0;
 
 uint32_t tmr, tmrold = micros();
-
-void rpm_count(){
-  rpm_tik++;
-}
+uint32_t dispSek, dispmSek;
+float HZ;
 
 
-void SensorData(){
-  rpm = rpm_tik;
-  rpm_tik = 0;
-  digitalWrite(PIN_LED, HIGH);
-  delayMicroseconds(500);
-  digitalWrite(PIN_LED, LOW);
-}
-void setup(){
-  Serial.begin(57600);
-
-
+void setup() {
    display.begin(SSD1306_SWITCHCAPVCC, 0x3C); // указываем адрес устройства на шине
-   display.clearDisplay();
+display.clearDisplay();
    display.setTextSize(1, 2); // указываем размер шрифта
    display.setTextColor(SSD1306_WHITE); // указываем цвет надписи
 
@@ -62,37 +51,42 @@ void setup(){
     delay(3000);
      display.clearDisplay(); // очищаем экран
 
-   
-
-   pinMode(RPM_PIN,INPUT);
-   attachInterrupt(digitalPinToInterrupt(RPM_PIN),  rpm_count,  RISING);
-   Timer1.attachInterrupt(SensorData);
-   Timer1.initialize(1000000);
-   pinMode(PIN_LED, OUTPUT);
+  
+  // put your setup code here, to run once:
+  pinMode (led_out, OUTPUT);
+  pinMode (sensor_in, INPUT);
 }
 
+void loop() {
 
-void loop(){
-    rpm_result = 0;
-    for (int i=0; i<=1; i++)    {
-      rpm_array[i]=rpm_array[i+1];
-    }    
-    rpm_array[2] = /*60* определяем  в секунду*/rpm/2;
-    for (int i=0; i<=2; i++)    {
-      rpm_result = rpm_result+rpm_array[i]; 
-    } 
-    //Среднее
-    rpm_result = rpm_result/3;
+  oldval = val;
+  val = (digitalRead (sensor_in));
 
-
+  if ((val == HIGH) && (oldval == LOW))  {
+    digitalWrite (led_out, HIGH);
+  }
+  else if ((val == LOW) && (oldval == HIGH))  {
+    digitalWrite (led_out, LOW);
+    
+      mytime = micros();
+      diftime = mytime - oldtime;      
+      
     tmr = micros();
-    if( tmrold - tmr > 1000 ){
-          display.clearDisplay();
-     display.setCursor(0, 0);
-     display.println(rpm_result);
+    if( tmrold - tmr > 1000000 ){
+      dispSek = (uint32_t)diftime / 1000000;
+      dispmSek = (uint32_t) (diftime - (dispSek * 1000000));
+
+       HZ = diftime; HZ = (float) (1000000 / HZ );
+       
+     display.clearDisplay();
+     display.setCursor(0, 0);  display.print(dispSek); display.print(".");  display.print(dispmSek); display.print(" cek"); 
+     display.setCursor(0, 17); display.print(HZ); display.print(" Hz");
      display.display();
      tmrold = tmr;
     }
-      
-    
+
+
+   
+    oldtime = mytime;
+  }
 }
