@@ -40,7 +40,10 @@
 #define led_out 13
 #define sensor_in 2
 
-Adafruit_SSD1306 display(128, 32, &Wire, 4);
+#define DISP_HEIGHT 32
+#define DISP_WIDTH 128
+
+Adafruit_SSD1306 display(DISP_WIDTH, DISP_HEIGHT, &Wire, 4);
 
 boolean val;
 boolean oldval; 
@@ -91,18 +94,25 @@ void displayParam(byte countMotion, float period_us){
     displayTimer = micros();
     if( displayTimerOld - displayTimer > DISPLAY_TIMEOUT ){
      display.clearDisplay();
+/*
+dispSek = DISP_HEIGHT / 2;
+display.drawLine(15, dispSek-3, 15, dispSek+3, SSD1306_WHITE);
+display.drawLine(12, dispSek, 18, dispSek, SSD1306_WHITE);
+*/
      //Число колебаний
      display.setCursor(0, 0); display.print(countMotion); 
+  //Оставшееся количество
+     display.setCursor(0, 17); display.print( (MAX - countMotion ) ); 
 
      //Период
      f = period_us; f = (float) (f / 1000000 );
-     display.setCursor(10, 0);  
+     display.setCursor(17, 0);  
      display.print(f);display.print(" cek"); 
 
      //Частота
      //dtostrf(f, 4, 2, str); display.print( str );display.print(" cek");
      f = period_us; f = (float) (1000000 / f );
-     display.setCursor(10, 17); display.print(f); display.print(" Hz");
+     display.setCursor(17, 17); display.print(f); display.print(" Hz");
      display.display();
      displayTimerOld = displayTimer;
     }
